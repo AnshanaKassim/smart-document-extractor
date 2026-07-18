@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Document Extractor</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f0f2f5;
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      color: #1a1a2e;
+      font-size: 28px;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+      font-size: 14px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 30px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    .card h2 {
+      font-size: 16px;
+      color: #1a1a2e;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #f0f2f5;
+    }
+
+    .upload-area {
+      border: 2px dashed #d0d7de;
+      border-radius: 8px;
+      padding: 40px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: 16px;
+    }
+
+    .upload-area:hover {
+      border-color: #2563eb;
+      background: #f8faff;
+    }
+
+    .upload-area.dragover {
+      border-color: #2563eb;
+      background: #f0f5ff;
+    }
+
+    .upload-icon {
+      font-size: 40px;
+      margin-bottom: 10px;
+    }
+
+    .upload-text {
+      color: #666;
+      font-size: 14px;
+    }
+
+    .upload-text span {
+      color: #2563eb;
+      font-weight: 500;
+    }
+
+    #fileInput {
+      display: none;
+    }
+
+    .file-selected {
+      background: #f0f5ff;
+      border: 1px solid #2563eb;
+      border-radius: 6px;
+      padding: 10px 16px;
+      font-size: 14px;
+      color: #2563eb;
+      margin-bottom: 16px;
+      display: none;
+    }
+
+    .btn {
+      padding: 12px 28px;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: #2563eb;
+      color: white;
+      width: 100%;
+    }
+
+    .btn-primary:hover {
+      background: #1d4ed8;
+    }
+
+    .btn-primary:disabled {
+      background: #93c5fd;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: #f0f2f5;
+      color: #1a1a2e;
+    }
+
+    .btn-secondary:hover {
+      background: #e2e6ea;
+    }
+
+    .search-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      padding: 10px 16px;
+      border: 1px solid #d0d7de;
+      border-radius: 8px;
+      font-size: 14px;
+      outline: none;
+      transition: border 0.2s;
+    }
+
+    input[type="text"]:focus {
+      border-color: #2563eb;
+    }
+
+    .result-box {
+      background: #1a1a2e;
+      border-radius: 8px;
+      padding: 20px;
+      margin-top: 16px;
+      display: none;
+    }
+
+    .result-box pre {
+      color: #e2e8f0;
+      font-size: 13px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: 'Courier New', monospace;
+      line-height: 1.6;
+    }
+
+    .status {
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      margin-top: 12px;
+      display: none;
+    }
+
+    .status.loading {
+      background: #fef9c3;
+      color: #854d0e;
+      display: block;
+    }
+
+    .status.success {
+      background: #dcfce7;
+      color: #166534;
+      display: block;
+    }
+
+    .status.error {
+      background: #fee2e2;
+      color: #991b1b;
+      display: block;
+    }
+
+    .tag {
+      display: inline-block;
+      background: #dbeafe;
+      color: #1d4ed8;
+      padding: 2px 10px;
+      border-radius: 99px;
+      font-size: 12px;
+      margin-right: 6px;
+      margin-bottom: 6px;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <h1>🔍 Smart Document Extractor</h1>
+  <p class="subtitle">Upload a PDF document and extract structured data using AI</p>
+
+  <!-- Upload Card -->
+  <div class="card">
+    <h2>Upload Document</h2>
+
+    <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+      <div class="upload-icon">📄</div>
+      <div class="upload-text">
+        <span>Click to upload</span> or drag and drop<br>
+        PDF files only
+      </div>
+    </div>
+
+    <input type="file" id="fileInput" accept=".pdf">
+    <div class="file-selected" id="fileSelected"></div>
+
+    <button class="btn btn-primary" id="uploadBtn" onclick="uploadFile()" disabled>
+      Extract Data
+    </button>
+
+    <div class="status" id="uploadStatus"></div>
+
+    <div class="result-box" id="uploadResult">
+      <pre id="uploadResultText"></pre>
+    </div>
+  </div>
+
+  <!-- Search Card -->
+  <div class="card">
+    <h2>Search Extractions</h2>
+    <p style="font-size:13px;color:#666;margin-bottom:16px;">
+      Search previous extractions by document type e.g.
+      <span class="tag">Resume</span>
+      <span class="tag">Invoice</span>
+      <span class="tag">Payslip</span>
+    </p>
+    <div class="search-row">
+      <input type="text" id="searchInput" placeholder="e.g. Resume" onkeydown="if(event.key==='Enter') searchDocs()">
+      <button class="btn btn-secondary" onclick="searchDocs()">Search</button>
+      <button class="btn btn-secondary" onclick="getAllDocs()">Get All</button>
+    </div>
+
+    <div class="status" id="searchStatus"></div>
+
+    <div class="result-box" id="searchResult">
+      <pre id="searchResultText"></pre>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const fileInput = document.getElementById('fileInput');
+  const uploadArea = document.getElementById('uploadArea');
+  const uploadBtn = document.getElementById('uploadBtn');
+  const fileSelected = document.getElementById('fileSelected');
+
+  // File selection
+  fileInput.addEventListener('change', function() {
+    if (this.files.length > 0) {
+      fileSelected.textContent = '📎 ' + this.files[0].name;
+      fileSelected.style.display = 'block';
+      uploadBtn.disabled = false;
+    }
+  });
+
+  // Drag and drop
+  uploadArea.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    this.classList.add('dragover');
+  });
+
+  uploadArea.addEventListener('dragleave', function() {
+    this.classList.remove('dragover');
+  });
+
+  uploadArea.addEventListener('drop', function(e) {
+    e.preventDefault();
+    this.classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (file && file.type === 'application/pdf') {
+      fileInput.files = e.dataTransfer.files;
+      fileSelected.textContent = '📎 ' + file.name;
+      fileSelected.style.display = 'block';
+      uploadBtn.disabled = false;
+    }
+  });
+
+  // Upload file
+  async function uploadFile() {
+    const file = fileInput.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    setStatus('uploadStatus', 'loading', '⏳ Extracting data, please wait...');
+    uploadBtn.disabled = true;
+    document.getElementById('uploadResult').style.display = 'none';
+
+    try {
+      const response = await fetch('/api/documents/extract', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) throw new Error('Upload failed');
+
+      const data = await response.json();
+      let cleanJson = data.extractedData
+              .replace(/```json/g, '')
+              .replace(/```/g, '')
+              .trim();
+      const parsed = JSON.parse(cleanJson);
+      setStatus('uploadStatus', 'success', '✅ Extraction complete!');
+      document.getElementById('uploadResult').style.display = 'block';
+      document.getElementById('uploadResultText').textContent = JSON.stringify(parsed, null, 2);
+
+    } catch (err) {
+      setStatus('uploadStatus', 'error', '❌ Error: ' + err.message);
+    } finally {
+      uploadBtn.disabled = false;
+    }
+  }
+
+  // Search
+  async function searchDocs() {
+    const type = document.getElementById('searchInput').value.trim();
+    if (!type) return;
+
+    setStatus('searchStatus', 'loading', '⏳ Searching...');
+    document.getElementById('searchResult').style.display = 'none';
+
+    try {
+      const response = await fetch('/api/documents/search?type=' + encodeURIComponent(type));
+      const data = await response.json();
+
+      setStatus('searchStatus', 'success', `✅ Found ${data.length} result(s)`);
+      document.getElementById('searchResult').style.display = 'block';
+      document.getElementById('searchResultText').textContent = JSON.stringify(data, null, 2);
+    } catch (err) {
+      setStatus('searchStatus', 'error', '❌ Error: ' + err.message);
+    }
+  }
+
+  // Get all
+  async function getAllDocs() {
+    setStatus('searchStatus', 'loading', '⏳ Loading all extractions...');
+    document.getElementById('searchResult').style.display = 'none';
+
+    try {
+      const response = await fetch('/api/documents');
+      const data = await response.json();
+
+      setStatus('searchStatus', 'success', `✅ Found ${data.length} extraction(s)`);
+      document.getElementById('searchResult').style.display = 'block';
+      document.getElementById('searchResultText').textContent = JSON.stringify(data, null, 2);
+    } catch (err) {
+      setStatus('searchStatus', 'error', '❌ Error: ' + err.message);
+    }
+  }
+
+  function setStatus(id, type, message) {
+    const el = document.getElementById(id);
+    el.className = 'status ' + type;
+    el.textContent = message;
+  }
+</script>
+</body>
+</html>
