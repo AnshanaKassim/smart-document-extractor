@@ -32,9 +32,10 @@ public class DocumentService {
         PDFTextStripper stripper = new PDFTextStripper();
         String text = stripper.getText(document);
         document.close();
+        String truncatedText = text.length() > 3000 ? text.substring(0, 3000) : text;
 
         // Step 2 - Send text to OpenAI
-        String extractedJson = openAIService.extractData(text);
+        String extractedJson = openAIService.extractData(truncatedText);
 
         // Step 3 - Parse document type from response
         String documentType = "unknown";
